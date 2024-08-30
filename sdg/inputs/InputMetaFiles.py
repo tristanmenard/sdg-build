@@ -73,7 +73,12 @@ class InputMetaFiles(InputFiles):
                         if (not meta[language][field]) and (field in meta):
                             # Fallback to source language for missing values.
                             meta[language][field] = meta[field]
-                    
+        # Remove any recursively nested languages within languages
+        for language in languages:
+            if language in meta:
+                for nested_language in languages:
+                    if nested_language in meta[language]:
+                        del meta[language][nested_language]
 
 
     def fix_booleans(self, meta):
