@@ -68,6 +68,12 @@ class InputMetaFiles(InputFiles):
                 self.apply_metadata_mapping(translated_meta)
                 self.fix_booleans(translated_meta)
                 meta[language] = translated_meta
+                if meta[language]:
+                    for field in meta[language]:
+                        if !meta[language][field] and field in meta:
+                            # Fallback to source language for missing values.
+                            meta[language][field] = meta[field]
+                    
 
 
     def fix_booleans(self, meta):
