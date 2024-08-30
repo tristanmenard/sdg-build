@@ -70,7 +70,7 @@ class InputMetaFiles(InputFiles):
                 meta[language] = translated_meta
                 if meta[language]:
                     for field in meta[language]:
-                        if !meta[language][field] and field in meta:
+                        if (not meta[language][field]) and (field in meta):
                             # Fallback to source language for missing values.
                             meta[language][field] = meta[field]
                     
