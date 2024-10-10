@@ -1,4 +1,4 @@
-def measure_indicator_progress(indicator):
+def measure_indicator_progress(indicator, indicator_options=None):
     """Sets up all needed parameters and data for progress calculation, determines methodology for calculation,
     and returns progress measure as an output.
 
@@ -32,7 +32,7 @@ def measure_indicator_progress(indicator):
     config = config_defaults(config)
 
     # get relevant data to calculate progress (aggregate/total line only)
-    data = data_progress_measure(data)
+    data = data_progress_measure(data, config=config, indicator_options=indicator_options)
 
     if data is None:
         return None
@@ -137,7 +137,7 @@ def update_progress_thresholds(config, method):
     return config
 
 
-def data_progress_measure(data):
+def data_progress_measure(data, config=None, indicator_options=None):
     """Checks and filters data for indicator for which progress is being calculated.
 
     If the Year column in data contains more than 4 characters (standard year format), takes the first 4 characters.
@@ -156,12 +156,27 @@ def data_progress_measure(data):
         # take the first year in the range
         data['Year'] = data['Year'].astype(str).str.slice(0, 4).astype(int)
 
-    # get just the total line values from data
-    cols = data.columns.values
+    series_column = indicator_options.series_column
+    unit_column = indicator_options.unit_column
+    non_disaggregation_columns = indicator_options.non_disaggregation_columns
+    cols = data.columns
+
     if len(cols) > 2:
-        cols = cols[1:-1]
-        data = data[data[cols].isna().all('columns')]
+        # Data has disaggregation columns. Find the appropriate subset of data for progress calculation
+        # If units and/or series columns exist, keep only the user selected unit/series
+        if (unit_column in cols) and ('unit' in config.keys()):
+            data = data.loc[data[unit_column] == config['unit']]
+        if (series_column in cols) and ('series' in config.keys()):
+            data = data.loc[data[series_column] == config['series']]
+        # Find headline data (rows where values in all disaggregation dimensions are NA)
+        data = data[data.loc[:, ~cols.isin(non_disaggregation_columns)].isna().all('columns')]
+        # Keep only Year and Value columns
         data = data.iloc[:, [0, -1]]
+
+        # To do: 
+        # Add PROGRESS/Progress to non_disaggregation columns
+        # if progress column in cols: use progress column values instead of Value
+        # What if no unit/series is selected by user but series/units column(s) exist? --> error? alphabetical? first appearing? None?
 
     # remove any NA values from data
     data = data[data["Value"].notna()]
